@@ -165,6 +165,7 @@ def build_dmg(  # noqa; C901
         "size": None,
         "files": [],
         "symlinks": {},
+        "links": {},
         "hide": [],
         "hide_extensions": [],
         "icon": None,
@@ -722,6 +723,43 @@ def build_dmg(  # noqa; C901
                 "operation": "symlinks::add",
             }
         )
+
+        callback(
+            {
+                "type": "operation::start",
+                "operation": "links::add",
+                "total": len(options["links"]),
+            }
+        )
+
+        for name, target in options["links"].items():
+            name_in_image = os.path.join(mount_point, name)
+            # hardlinks only work in the same volume so the given path has to be relative to the volume
+            target_in_image = os.path.join(mount_point, target)
+            callback(
+                {
+                    "type": "operation::start",
+                    "operation": "link::add",
+                    "file": name_in_image,
+                    "target": target_in_image,
+                }
+            )
+            os.link(target_in_image, name_in_image)
+            callback(
+                {
+                    "type": "operation::finished",
+                    "operation": "link::add",
+                    "file": name_in_image,
+                    "target": target_in_image,
+                }
+            )
+
+        callback(
+            {
+                "type": "operation::finished",
+                "operation": "links::add",
+            }
+        )        
 
         callback(
             {
